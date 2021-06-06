@@ -1,11 +1,12 @@
 # Computer parts backend API for e-commerce
 
-Using NodeJS + express + JWT (coming soon)
+Using NodeJS + express + mongoose + JWT (coming soon)
 
 ## Getting started
 
 first, the tool(s) that you **MUST** have:
 - NodeJS
+- MongoDB
 
 second, install the dependencies:
 ```bash
