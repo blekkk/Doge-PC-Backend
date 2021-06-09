@@ -12,6 +12,7 @@ const userSchema = new Schema({
   verify_token: String,
   phone_number: String,
   address: {
+    _id: false,
     sreet: String,
     city: String,
     region: String,
@@ -19,6 +20,7 @@ const userSchema = new Schema({
   },
   wishlist: [
     {
+      _id: false,
       product_id: {
         type: mongo.Schema.Types.ObjectId,
         ref: 'products'

@@ -20,6 +20,7 @@ const productSchema = new Schema({
   average_rating: Number,
   reviews: [
     {
+      _id: false,
       reviewer_name: String,
       rating: Number,
       comment: String,
