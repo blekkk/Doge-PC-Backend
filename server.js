@@ -1,8 +1,10 @@
 require('dotenv').config();
-require('./api/database/dbconfig');
+const db = require('./api/database/dbconfig');
 const routes = require('./api/routes');
 const express = require('express');
 const cors = require('cors');
+
+db.run();
 
 const app = express();
 

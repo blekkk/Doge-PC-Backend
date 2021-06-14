@@ -1,78 +1,120 @@
-const Product = require('../models/productSchema');
+const { getCollection, oid } = require('../dbconfig');
 
-exports.insertProduct = (req, res) => {
-  const newProduct = new Product(req.body);
-
-  newProduct.save((err, data) => {
-    if (err) res.status(500).send(err);
-
-    res.status(201).json(data);
-  })
+exports.insertProduct = async (req, res) => {
+  const products = getCollection('products');
+  const newProduct = req.body;
+  try {
+    const result = await products.insertOne(newProduct);
+    res.status(201).json({
+      message: "Successfully inserted",
+      result
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
-exports.getProducts = (req, res) => {
-  Product.find({}, (err, data) => {
-    if (err) res.status(500).send(err);
+exports.getProducts = async (req, res) => {
+  const products = getCollection('products');
+  try {
+    let productsResult = [];
+    const productsCursor = await products.find();
+    productsResult = await productsCursor.toArray();
 
-    res.status(200).json(data);
-  })
+    if (!productsResult) {
+      res.status(404).send('Products not found');
+      return
+    }
+
+    res.status(200).json(productsResult);
+    productsCursor.close();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
 exports.updateProduct = async (req, res) => {
-  const id = req.params.id;
+  const products = getCollection('products');
   const updateProduct = req.body;
+  const updatedProduct = {
+    $set: {
+      ...updateProduct
+    }
+  }
+  try {
+    const id = oid(req.params.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
 
-  let product = await Product.findById(id).catch((err) => console.log(err));
-  product = {
-    ...product._doc,
-    ...updateProduct
-  };
-
-  Product.replaceOne({ _id: id }, product, (err, data) => {
-    if (err) res.status(500).send(err);
-
-    res.status(200).json(data);
-  })
+    await products.updateOne({ _id: id }, updatedProduct);
+    res.status(200).send('Update successful');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
-exports.getProduct = (req, res) => {
-  const id = req.params.id;
+exports.getProduct = async (req, res) => {
+  const products = getCollection('products');
+  try {
+    const id = oid(req.params.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
 
-  Product.findById(id, (err, data) => {
-    if (err) res.status(404).send("Product not found");
-
-    res.status(200).json(data);
-  })
+    const result = await products.findOne({_id: id})
+    if (!result) {
+      res.status(404).send('Product not found');
+      return;
+    }
+    res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
 exports.postProductReview = async (req, res) => {
-  const id = req.params.id;
-  const productComment = req.body;
-
-  let product = await Product.findById(id).catch((err) => console.log(err));
-  product = {
-    ...product._doc,
-  };
-
-  productComment.rating = parseInt(productComment.rating);
-
-  if (productComment.rating > 5 || productComment.rating <= 0){
-    res.status(400).send('Invalid request, rating only valid between 1-5');
-    return;
+  const products = getCollection('products');
+  const productReview = req.body;
+  productReview.rating = parseInt(productReview.rating);
+  let avgRating;
+  try {
+    const id = oid(req.params.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+    let product = await products.findOne({_id: id})
+    if (!product) {
+      res.status(404).send('Product not found');
+      return;
+    }
+    if (productReview.rating > 5 || productReview.rating <= 0) {
+      res.status(400).send('Invalid request, rating only valid between 1-5');
+      return;
+    }
+    if (product.reviews)
+      avgRating = (product.reviews.reduce((acc, obj) => { return acc + obj.rating; }, 0) + productReview.rating) / (product.reviews.length + 1);
+    else
+      avgRating = productReview.rating;
+    const pushReview = {
+      $set: {
+        average_rating: avgRating
+      },
+      $push: {
+          reviews: productReview
+        }
+      }
+    await products.updateOne({ _id: id }, pushReview);
+    res.status(200).send('Update successful');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
   }
-
-  product.reviews.push(productComment);
-
-  const avgRating = product.reviews.reduce((acc, obj) => { return acc + obj.rating; }, 0) / product.reviews.length;
-
-  product = {
-    ...product,
-    average_rating: avgRating.toFixed(2),
-  };
-
-  Product.replaceOne({ _id: id }, product, (err, data) => {
-    if (err) res.status(500).send(err);
-
-    res.status(200).json(data);
-  })
 }

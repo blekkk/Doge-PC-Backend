@@ -1,20 +1,36 @@
-const User = require('../models/userSchema');
+const { getCollection, oid } = require('../dbconfig');
 
-exports.listUsers = (req, res) => {
-  User.find({}, (err, data) => {
-    if (err)
-      res.status(500).send(err)
-    else
-      res.status(200).json(data);
-  })
+exports.listUsers = async (req, res) => {
+  const users = getCollection('users');
+  try {
+    let usersResult = [];
+    const usersCursor = await users.find();
+    usersResult = await usersCursor.toArray();
+
+    if (!usersResult) {
+      res.status(404).send('users not found');
+      return
+    }
+
+    res.status(200).json(usersResult);
+    usersCursor.close();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
-exports.insertUser = (req, res) => {
-  let newUser = new User(req.body);
-  newUser.save((err, data) => {
-    if (err)
-      res.status(500).send(err)
-    else
-      res.status(201).json(data);
-  })
+exports.insertUser = async (req, res) => {
+  const users = getCollection('users');
+  const newuser = req.body;
+  try {
+    const result = await users.insertOne(newuser);
+    res.status(201).json({
+      message: "Successfully inserted",
+      result
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
