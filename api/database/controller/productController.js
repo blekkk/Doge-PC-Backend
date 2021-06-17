@@ -58,6 +58,26 @@ exports.updateProduct = async (req, res) => {
   }
 }
 
+exports.deleteProduct = async (req, res) => {
+  const products = getCollection('products');
+  try {
+    const id = oid(req.params.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    const result = await products.deleteOne({ _id: id })
+    if (!result) {
+      res.status(404).send('Product not found');
+      return;
+    }
+    res.status(201).json(result);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 exports.getProduct = async (req, res) => {
   const products = getCollection('products');
   try {
@@ -67,7 +87,7 @@ exports.getProduct = async (req, res) => {
       return;
     }
 
-    const result = await products.findOne({_id: id})
+    const result = await products.findOne({ _id: id })
     if (!result) {
       res.status(404).send('Product not found');
       return;
@@ -90,7 +110,7 @@ exports.postProductReview = async (req, res) => {
       res.status(404).send('Invalid _id');
       return;
     }
-    let product = await products.findOne({_id: id})
+    let product = await products.findOne({ _id: id })
     if (!product) {
       res.status(404).send('Product not found');
       return;
@@ -108,9 +128,9 @@ exports.postProductReview = async (req, res) => {
         average_rating: avgRating
       },
       $push: {
-          reviews: productReview
-        }
+        reviews: productReview
       }
+    }
     await products.updateOne({ _id: id }, pushReview);
     res.status(200).send('Update successful');
   } catch (error) {

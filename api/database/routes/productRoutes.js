@@ -7,7 +7,8 @@ module.exports = (app) => {
 
   app.route('/product/:id')
     .get(products.getProduct)
-    .put(products.updateProduct);
+    .put(products.updateProduct)
+    .delete(products.deleteProduct);
 
   app.route('/product/:id/postReview')
     .put(products.postProductReview);

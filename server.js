@@ -7,12 +7,13 @@ const cors = require('cors');
 db.run();
 
 const app = express();
+const corsOptions = {
+  origin: process.env.ORIGIN
+};
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({
-  origin: process.env.ORIGIN
-}));
+app.use(cors(corsOptions));
 
 const port = process.env.PORT || 3000;
 
