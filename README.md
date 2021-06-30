@@ -5,7 +5,7 @@ Using NodeJS + express + mongodb + JWT
 ## Getting started
 
 first, the tool(s) that you **MUST** have:
-- NodeJS
+- NodeJS (version 14 and above)
 - MongoDB
 
 second, install the dependencies:

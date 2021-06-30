@@ -1,8 +1,9 @@
 const { getCollection, oid } = require('../dbconfig');
+const { productModel } = require('../model/productModel');
 
 exports.insertProduct = async (req, res) => {
   const products = getCollection('products');
-  const newProduct = req.body;
+  const newProduct = productModel(req.body);
   try {
     const result = await products.insertOne(newProduct);
     res.status(201).json({
@@ -37,7 +38,7 @@ exports.getProducts = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   const products = getCollection('products');
-  const updateProduct = req.body;
+  const updateProduct = productModel(req.body);
   const updatedProduct = {
     $set: {
       ...updateProduct

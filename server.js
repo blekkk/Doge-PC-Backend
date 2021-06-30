@@ -8,8 +8,8 @@ db.run();
 
 const app = express();
 const corsOptions = {
-  origin: process.env.ORIGIN,
-  exposedHeaders: 'auth-token'
+  // origin: process.env.ORIGIN,
+  exposedHeaders: ['auth-token']
 };
 
 app.use(express.urlencoded({ extended: true }));
