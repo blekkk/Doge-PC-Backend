@@ -5,6 +5,9 @@ module.exports = (app) => {
     .get(products.getProducts)
     .post(products.insertProduct);
 
+  app.route('/products/:category')
+    .get(products.getProductsWithCategory);
+
   app.route('/product/:id')
     .get(products.getProduct)
     .put(products.updateProduct)

@@ -1,3 +1,4 @@
+const { query } = require('express');
 const { getCollection, oid } = require('../dbconfig');
 const { productModel } = require('../model/productModel');
 
@@ -22,6 +23,30 @@ exports.getProducts = async (req, res) => {
     let productsResult = [];
     const productsCursor = await products.find();
     productsResult = await productsCursor.toArray();
+
+    if (!productsResult) {
+      res.status(404).send('Products not found');
+      return
+    }
+
+    res.status(200).json(productsResult);
+    productsCursor.close();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.getProductsWithCategory = async (req, res) => {
+  const products = getCollection('products');
+  try {
+    const category = req.params.category;
+    let productsResult = [];
+    const productsCursor = await products.find({ 
+      "category.main_category": category
+     });
+    productsResult = await productsCursor.toArray();
+    console.log(productsResult);
 
     if (!productsResult) {
       res.status(404).send('Products not found');
