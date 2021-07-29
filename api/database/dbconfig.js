@@ -9,7 +9,7 @@ const client = new MongoClient(uri, {
 });
 
 const oid = (id) => {
-  if (id.length < 24 || id.length > 24) {
+  if (!ObjectID.isValid(id)) {
     return null;
   }
   return new ObjectID(id);

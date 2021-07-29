@@ -26,7 +26,7 @@ exports.getProducts = async (req, res) => {
 
     if (!productsResult) {
       res.status(404).send('Products not found');
-      return
+      return;
     }
 
     res.status(200).json(productsResult);
@@ -37,16 +37,51 @@ exports.getProducts = async (req, res) => {
   }
 }
 
+const handleGetProductQuery = async (products, category, queries) => {
+  const sortQueryArray = []
+
+  if (queries.priceSort)
+    sortQueryArray.push(
+      { "price": queries.priceSort === 'ASC' ? 1 : -1 }
+    )
+  if (queries.soldSort)
+    sortQueryArray.push(
+      { "sold_number": queries.soldSort === 'ASC' ? 1 : -1 }
+    )
+
+  const sortQueryObject = {
+    $sort: Object.assign({}, ...sortQueryArray)
+  }
+
+  const productsCursor = await products.aggregate([
+    { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } },
+    sortQueryObject
+  ])
+
+  return await productsCursor.toArray();
+}
+
 exports.getProductsWithCategory = async (req, res) => {
   const products = getCollection('products');
+  const { priceSort, soldSort, minRating } = req.query;
+
   try {
     const category = req.params.category;
     let productsResult = [];
-    const productsCursor = await products.find({ 
-      "category.main_category": category
-     });
-    productsResult = await productsCursor.toArray();
-    console.log(productsResult);
+
+    if (priceSort || soldSort || minRating) {
+      productsResult = await handleGetProductQuery(products, category, {
+        priceSort,
+        soldSort,
+        minRating
+      });
+    } else {
+      const productsCursor = await products.find({
+        "category.main_category": category
+      });
+      productsResult = await productsCursor.toArray();
+      productsCursor.close();
+    }
 
     if (!productsResult) {
       res.status(404).send('Products not found');
@@ -54,7 +89,6 @@ exports.getProductsWithCategory = async (req, res) => {
     }
 
     res.status(200).json(productsResult);
-    productsCursor.close();
   } catch (error) {
     console.log(error);
     res.status(500).send(error.message);
