@@ -1,5 +1,5 @@
 const { getCollection, oid } = require('../dbconfig');
-const { userModel } = require('../model/userModel');
+const { userModelInsert, userModelUpdate } = require('../model/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -14,7 +14,7 @@ exports.userSignIn = async (req, res) => {
     const validPasswd = await bcrypt.compare(password, user.password);
     if (!validPasswd) return res.status(400).send('Email or password is wrong!');
 
-    const token = jwt.sign({id: user._id}, process.env.TOKEN_SECRET);
+    const token = jwt.sign({ id: user._id }, process.env.TOKEN_SECRET);
     return res.header('auth-token', token).status(200).send('Logged in!');
   } catch (error) {
     console.log(error);
@@ -22,12 +22,12 @@ exports.userSignIn = async (req, res) => {
   }
 }
 
-exports.userSignUp = async (req, res) => {  
+exports.userSignUp = async (req, res) => {
   const users = getCollection('users');
-  const newUser = userModel(req.body);
+  const newUser = userModelInsert(req.body);
 
   try {
-    const userExist = await users.findOne({email: newUser.email});
+    const userExist = await users.findOne({ email: newUser.email });
     if (userExist) return res.status(400).send(
       'User already exist!'
     );
@@ -60,6 +60,60 @@ exports.listUsers = async (req, res) => {
 
     res.status(200).json(usersResult);
     usersCursor.close();
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.getUser = async (req, res) => {
+  const users = getCollection('users');
+  try {
+    const id = oid(req.verified.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    const result = await users.findOne({ _id: id })
+    if (!result) {
+      res.status(404).send('user not found');
+      return;
+    }
+    res.status(200).json({
+      first_name: result.first_name,
+      last_name:result.last_name,
+      phone_number: result.phone_number,
+      address: {
+        street: result.address.street,
+        city: result.address.city,
+        province: result.address.province,
+        zip_code: result.address.zip_code
+      }
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.updateUser = async (req, res) => {
+  const users = getCollection('users');
+  const userModel = userModelUpdate(req.body);
+  const setUpdate = {
+    $set: {
+      ...userModel
+    }
+  };
+  try {
+    const id = oid(req.verified.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    await users.updateOne({ _id: id }, setUpdate);
+    return res.status(200).send('Successfully updated');
   } catch (error) {
     console.log(error);
     res.status(500).send(error.message);

@@ -1,4 +1,4 @@
-const userModel = (data) => {
+exports.userModelInsert = (data) => {
   return {
     first_name: data.first_name,
     last_name: data?.last_name || '',
@@ -9,10 +9,22 @@ const userModel = (data) => {
       street: data?.street || '',
       city: data?.city || '',
       province: data?.province || '',
-      zip_code: data?.province || '' 
+      zip_code: data?.zip_code || '' 
     },
     wishlist: []
   };
 };
 
-module.exports = { userModel };
+exports.userModelUpdate = (data) => {
+  return {
+    first_name: data.first_name,
+    last_name: data?.last_name || '',
+    phone_number: data?.phone_number || '',
+    address: {
+      street: data?.street || '',
+      city: data?.city || '',
+      province: data?.province || '',
+      zip_code: data?.zip_code || '' 
+    },
+  };
+};

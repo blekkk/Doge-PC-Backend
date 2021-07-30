@@ -1,10 +1,10 @@
 const { query } = require('express');
 const { getCollection, oid } = require('../dbconfig');
-const { productModel } = require('../model/productModel');
+const { productModelInsert, productModelUpdate } = require('../model/productModel');
 
 exports.insertProduct = async (req, res) => {
   const products = getCollection('products');
-  const newProduct = productModel(req.body);
+  const newProduct = productModelInsert(req.body);
   try {
     const result = await products.insertOne(newProduct);
     res.status(201).json({
@@ -53,12 +53,15 @@ const handleGetProductQuery = async (products, category, queries) => {
     $sort: Object.assign({}, ...sortQueryArray)
   }
 
-  const productsCursor = await products.aggregate([
-    { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } },
-    sortQueryObject
-  ])
+  if (sortQueryArray.length > 0)
+    return await products.aggregate([
+      { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } },
+      sortQueryObject
+    ]).toArray();
 
-  return await productsCursor.toArray();
+  return await products.aggregate([
+    { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } }
+  ]).toArray();
 }
 
 exports.getProductsWithCategory = async (req, res) => {
@@ -97,7 +100,7 @@ exports.getProductsWithCategory = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   const products = getCollection('products');
-  const updateProduct = productModel(req.body);
+  const updateProduct = productModelUpdate(req.body);
   const updatedProduct = {
     $set: {
       ...updateProduct
