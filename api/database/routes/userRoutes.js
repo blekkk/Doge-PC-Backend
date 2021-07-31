@@ -17,4 +17,10 @@ module.exports = (app) => {
 
   app.route('/user/signin')
     .post(users.userSignIn);
+
+  app.route('/user/wishlist/add')
+    .put(verifyToken, users.addToWishlist);
+
+  app.route('/user/wishlist/remove')
+    .put(verifyToken, users.removeFromWishlist);
 }

@@ -1,5 +1,5 @@
 const { getCollection, oid } = require('../dbconfig');
-const { userModelInsert, userModelUpdate } = require('../model/userModel');
+const { userModelInsert, userModelUpdate, userWishlistModelInsert } = require('../model/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -90,7 +90,8 @@ exports.getUser = async (req, res) => {
         city: result.address.city,
         province: result.address.province,
         zip_code: result.address.zip_code
-      }
+      },
+      wishlist: result.wishlist
     })
   } catch (error) {
     console.log(error);
@@ -139,6 +140,53 @@ exports.changePassword = async (req, res) => {
       }
     })
     return res.status(200).send('Successfully updated');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.addToWishlist = async (req, res) => {
+  const users = getCollection('users');
+  const wishlistItem = userWishlistModelInsert(req.body);
+  try {
+    const id = oid(req.verified.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    await users.updateOne({ _id: id }, {
+      $push: {
+        wishlist: wishlistItem
+      }
+    })
+    return res.status(200).send('Successfully added');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.removeFromWishlist = async (req, res) => {
+  const users = getCollection('users');
+  const productId = req.body.productId;
+  try {
+    const id = oid(req.verified.id);
+    if (!id) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    await users.updateOne({ _id: id }, {
+      $pull: {
+        wishlist: {
+          productId: oid(productId)
+        }
+      },
+    });
+
+    return res.status(200).send('Successfully removed');
   } catch (error) {
     console.log(error);
     res.status(500).send(error.message);
