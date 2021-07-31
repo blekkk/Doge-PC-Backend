@@ -14,7 +14,7 @@ exports.adminLogin = async (req, res) => {
     const validPasswd = await bcrypt.compare(password, admin.password)
     if (!validPasswd) return res.status(400).send('Email or password is wrong!');
 
-    const token = jwt.sign({id: admin._id}, process.env.TOKEN_SECRET);
+    const token = jwt.sign({id: admin._id, role: admin.role}, process.env.TOKEN_SECRET);
     return res.header('auth-token', token).status(200).send('Logged in!');
   } catch (error) {
     console.log(error);

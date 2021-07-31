@@ -51,7 +51,14 @@ exports.listUsers = async (req, res) => {
   const users = getCollection('users');
   try {
     let usersResult = [];
-    const usersCursor = await users.find();
+    const usersCursor = await users.find().project({
+      first_name: 1,
+      last_name: 1,
+      email: 1,
+      phone_number: 1,
+      address: 1,
+      wishlist: 1
+    });
     usersResult = await usersCursor.toArray();
 
     if (!usersResult) {
@@ -187,6 +194,69 @@ exports.removeFromWishlist = async (req, res) => {
     });
 
     return res.status(200).send('Successfully removed');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.getUserById = async (req, res) => {
+  const users = getCollection('users');
+  try {
+    const userId = oid(req.params.id);
+    const id = oid(req.verified.id);
+    if (!id || !userId) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    const role = req.verified.role;
+    if (role !== 'admin') {
+      res.status(403).send('Forbidden, only for admin');
+      return;
+    }
+
+    const result = await users.findOne({ _id: userId })
+    if (!result) {
+      res.status(404).send('user not found');
+      return;
+    }
+    res.status(200).json({
+      first_name: result.first_name,
+      last_name:result.last_name,
+      phone_number: result.phone_number,
+      address: {
+        street: result.address.street,
+        city: result.address.city,
+        province: result.address.province,
+        zip_code: result.address.zip_code
+      },
+      wishlist: result.wishlist
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.deleteUserById = async (req, res) => {
+  const users = getCollection('users');
+  try {
+    const userId = oid(req.params.id);
+    const id = oid(req.verified.id);
+    if (!id || !userId) {
+      res.status(404).send('Invalid _id');
+      return;
+    }
+
+    const role = req.verified.role;
+    if (role !== 'admin') {
+      res.status(403).send('Forbidden, only for admin');
+      return;
+    }
+
+    await users.deleteOne({ _id: userId })
+    res.status(201).send('User successfully deleted');
   } catch (error) {
     console.log(error);
     res.status(500).send(error.message);

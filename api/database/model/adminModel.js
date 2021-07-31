@@ -2,7 +2,8 @@ const adminModel = (data) => {
   return {
     name: data.name,
     email: data.email,
-    password: data.password
+    password: data.password,
+    role: "admin"
   };
 };
 

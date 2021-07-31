@@ -9,6 +9,11 @@ module.exports = (app) => {
     .get(verifyToken, users.getUser)
     .put(verifyToken, users.updateUser);
 
+  // Only for admin
+  app.route('/user/:id')
+    .get(verifyToken, users.getUserById)
+    .delete(verifyToken, users.deleteUserById);
+
   app.route('/user/changepassword')
     .put(verifyToken, users.changePassword)
 
