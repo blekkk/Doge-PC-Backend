@@ -1,6 +1,8 @@
+const { oid } = require('../dbconfig');
+
 exports.cartModelInsert = (data) => {
   return {
-    userId: data.id,    
+    userId: oid(data.userid),    
     cartProducts: []
   }
 }

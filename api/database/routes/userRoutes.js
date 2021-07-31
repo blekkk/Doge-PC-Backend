@@ -9,6 +9,9 @@ module.exports = (app) => {
     .get(verifyToken, users.getUser)
     .put(verifyToken, users.updateUser);
 
+  app.route('/user/changepassword')
+    .put(verifyToken, users.changePassword)
+
   app.route('/user/signup')
     .post(users.userSignUp);
 

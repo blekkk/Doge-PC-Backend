@@ -37,9 +37,10 @@ exports.userSignUp = async (req, res) => {
     newUser.password = hashedPasswd;
 
     const result = await users.insertOne(newUser);
-    return res.status(201).send(
-      'User signed!'
-    );
+    return res.status(201).json({
+      message: 'User signed!',
+      userid: result.ops[0]._id
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).send(error.message);
@@ -113,6 +114,30 @@ exports.updateUser = async (req, res) => {
     }
 
     await users.updateOne({ _id: id }, setUpdate);
+    return res.status(200).send('Successfully updated');
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
+}
+
+exports.changePassword = async (req, res) => {
+  const users = getCollection('users');
+  const { password } = req.body;
+  try {
+    const id = oid(req.verified.id);
+    if (!id) {
+      return res.status(404).send('Invalid _id');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPasswd = await bcrypt.hash(password, salt);
+
+    await users.updateOne({ _id: id }, {
+      $set: {
+        password: hashedPasswd
+      }
+    })
     return res.status(200).send('Successfully updated');
   } catch (error) {
     console.log(error);
