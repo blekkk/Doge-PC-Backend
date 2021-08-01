@@ -187,9 +187,7 @@ exports.removeFromWishlist = async (req, res) => {
 
     await users.updateOne({ _id: id }, {
       $pull: {
-        wishlist: {
-          productId: oid(productId)
-        }
+        wishlist: oid(productId)
       },
     });
 
