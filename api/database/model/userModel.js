@@ -32,10 +32,5 @@ exports.userModelUpdate = (data) => {
 };
 
 exports.userWishlistModelInsert = (data) => {
-  return {
-    productId: oid(data.productId),
-    product_name: data.product_name,
-    price: data.price,
-    average_rating: data.average_rating
-  }
+  return oid(data.productId);
 }
