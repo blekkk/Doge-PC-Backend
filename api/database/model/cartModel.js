@@ -7,7 +7,12 @@ exports.cartModelInsert = (data) => {
   }
 }
 
-
+exports.cartModelAdd = (data) => {
+  return {
+    productId: oid(data.productId),
+    amount: data.amount
+  }
+}
 // add:
 // -cek stok
 // -cek duplikat getArrayCart pake product id, di backend
