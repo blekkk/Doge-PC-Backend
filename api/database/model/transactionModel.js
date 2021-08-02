@@ -1,15 +1,15 @@
 const { oid } = require('../dbconfig')
 
-exports.checkoutInsert = (data) => {
+exports.checkoutModelInsert = (data) => {
   return {
-    userId: oid(data.userId),
+    address: data.address,
     payment_method: data.payment_method,
     checkoutProduct: data.checkoutProduct,
-    buy_date: data.buy_date,
-    shipment_cost: data.shipment_cost,
-    shipment_receipt: data.shipment_cost,
+    buy_date: new Date(),
+    shipment_cost:  data.shipment_cost,
+    shipment_receipt: data.shipment_receipt,
     total_price: data.total_price,
-    isArrive: data.isArrive,
-    isDone: data.isDone
+    isArrive: true,
+    isDone: true
   }
 }

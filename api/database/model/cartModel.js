@@ -1,18 +1,24 @@
-const { oid } = require('../dbconfig');
+const { oid } = require("../dbconfig");
 
 exports.cartModelInsert = (data) => {
   return {
-    userId: oid(data.userid),    
-    cartProducts: []
-  }
-}
+    userId: oid(data.userid),
+    cartProducts: [],
+  };
+};
+
+exports.cartModelUpdate = (data) => {
+  return {
+    cartProducts: data.cartProducts,
+  };
+};
 
 exports.cartModelAdd = (data) => {
   return {
     productId: oid(data.productId),
-    amount: data.amount
-  }
-}
+    amount: data.amount,
+  };
+};
 // add:
 // -cek stok
 // -cek duplikat getArrayCart pake product id, di backend

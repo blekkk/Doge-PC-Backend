@@ -1,10 +1,26 @@
 const { getCollection, oid } = require('../dbconfig')
-const { checkoutInsert } = require('../model/transactionModel')
+const { checkoutModelInsert } = require('../model/transactionModel')
 
 exports.insertTransaction = async (req, res) => {
-  const transactions = getCollection('products');
-  const newTransaction = productModelInsert(req.body);
+  const transactions = getCollection('transactions');
+  const products = getCollection('products');
+  const newTransaction = checkoutModelInsert(req.body);
   try {
+    newTransaction.userId = oid(req.verified.id)
+    for (let i=0; i<newTransaction.checkoutProduct.length; i++) {
+      newTransaction.checkoutProduct[i].productId = oid(newTransaction.checkoutProduct[i].productId)
+      const product = await products.findOne({_id : newTransaction.checkoutProduct[i].productId})
+      if (newTransaction.checkoutProduct[i].amount > product.stock) {
+        return res.status(400).send('Out of Stock')
+      } 
+      await products.updateOne({_id: newTransaction.checkoutProduct[i].productId}, {
+        $set: {
+          stock: product.stock - newTransaction.checkoutProduct[i].amount,
+          sold_number: product.sold_number + newTransaction.checkoutProduct[i].amount
+        }
+      })
+    }
+
     const result = await transactions.insertOne(newTransaction);
     res.status(201).json({
       message: "Successfully inserted",
@@ -24,7 +40,7 @@ exports.getTransactions = async (req, res) => {
     transactionsResult = await transactionsCursor.toArray();
 
     if (!transactionsResult) {
-      res.status(404).send('Products not found');
+      res.status(404).send('Transactions not found');
       return;
     }
 
