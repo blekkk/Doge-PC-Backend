@@ -6,6 +6,9 @@ module.exports = (app) => {
     .get(verifyToken, transactions.getTransactions)
     .post(verifyToken, transactions.insertTransaction)
 
+  app.route('/checkout/all/admin')
+    .get(verifyToken, transactions.getTransactionsAdmin)
+
   app.route('/checkout/user')
     .get(verifyToken, transactions.getTransaction)
 }

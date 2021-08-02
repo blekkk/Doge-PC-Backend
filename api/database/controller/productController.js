@@ -6,6 +6,12 @@ exports.insertProduct = async (req, res) => {
   const products = getCollection('products');
   const newProduct = productModelInsert(req.body);
   try {
+    const role = req.verified.role;
+    if (role !== 'admin') {
+      res.status(403).send('Forbidden, only for admin');
+      return;
+    }
+
     const result = await products.insertOne(newProduct);
     res.status(201).json({
       message: "Successfully inserted",
@@ -17,25 +23,6 @@ exports.insertProduct = async (req, res) => {
   }
 }
 
-exports.getProducts = async (req, res) => {
-  const products = getCollection('products');
-  try {
-    let productsResult = [];
-    const productsCursor = await products.find();
-    productsResult = await productsCursor.toArray();
-
-    if (!productsResult) {
-      res.status(404).send('Products not found');
-      return;
-    }
-
-    res.status(200).json(productsResult);
-    productsCursor.close();
-  } catch (error) {
-    console.log(error);
-    res.status(500).send(error.message);
-  }
-}
 
 const handleGetProductQuery = async (products, category, queries) => {
   const sortQueryArray = []
@@ -55,13 +42,93 @@ const handleGetProductQuery = async (products, category, queries) => {
 
   if (sortQueryArray.length > 0)
     return await products.aggregate([
-      { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } },
+      { $match: { "category.main_category": category, average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } },
       sortQueryObject
     ]).toArray();
 
   return await products.aggregate([
-    { $match: { "category.main_category": category, average_rating: {$gte: queries.minRating? queries.minRating : 0} } }
+    { $match: { "category.main_category": category, average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } }
   ]).toArray();
+}
+
+const handleGetProductQueryWithName = async (products, queries) => {
+  const sortQueryArray = []
+
+  if (queries.priceSort)
+    sortQueryArray.push(
+      { "price": queries.priceSort === 'ASC' ? 1 : -1 }
+    )
+  if (queries.soldSort)
+    sortQueryArray.push(
+      { "sold_number": queries.soldSort === 'ASC' ? 1 : -1 }
+    )
+
+  const sortQueryObject = {
+    $sort: Object.assign({}, ...sortQueryArray)
+  }
+
+  if (queries.productName) {
+    productName = queries.productName.replace('%20', ' ');
+    if (sortQueryArray.length > 0)
+      return await products.aggregate([
+        // Unsupported Atlas tier
+        //{ $regexMatch: { input: '$productName', regex: new RegExp(`${queries.productName}`) } },
+        { $match: { product_name: new RegExp(`${queries.productName}`, 'i'), average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } },
+        // Unsupported Atlas tier
+        //{ $text: { $search: queries.productName } },
+        sortQueryObject
+      ]).toArray();
+      
+    return await products.aggregate([
+      // Unsupported Atlas tier
+      //{ $regexMatch: { input: '$productName', regex: new RegExp(`${queries.productName}`) } },
+      { $match: { product_name: new RegExp(`${queries.productName}`, 'i'), average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } },
+      // Unsupported Atlas tier
+      //{ $text: { $search: queries.productName } },
+    ]).toArray();
+  }
+
+  if (sortQueryArray.length > 0)
+    return await products.aggregate([
+      { $match: { average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } },
+      sortQueryObject
+    ]).toArray();
+
+  return await products.aggregate([
+    { $match: { average_rating: { $gte: parseInt(queries.minRating) > 0 ? parseInt(queries.minRating) : 0 } } }
+  ]).toArray();
+}
+
+exports.getProducts = async (req, res) => {
+  const products = getCollection('products');
+  const { priceSort, soldSort, minRating, productName } = req.query;
+
+  try {
+    let productsResult = [];
+
+    if (productName || priceSort || soldSort || minRating) {
+      productsResult = await handleGetProductQueryWithName(products, {
+        priceSort,
+        soldSort,
+        minRating,
+        productName
+      });
+    } else {
+      const productsCursor = await products.find({});
+      productsResult = await productsCursor.toArray();
+      productsCursor.close();
+    }
+
+    if (!productsResult) {
+      res.status(404).send('Products not found');
+      return
+    }
+
+    res.status(200).json(productsResult);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send(error.message);
+  }
 }
 
 exports.getProductsWithCategory = async (req, res) => {
@@ -113,6 +180,12 @@ exports.updateProduct = async (req, res) => {
       return;
     }
 
+    const role = req.verified.role;
+    if (role !== 'admin') {
+      res.status(403).send('Forbidden, only for admin');
+      return;
+    }
+
     await products.updateOne({ _id: id }, updatedProduct);
     res.status(200).send('Update successful');
   } catch (error) {
@@ -127,6 +200,12 @@ exports.deleteProduct = async (req, res) => {
     const id = oid(req.params.id);
     if (!id) {
       res.status(404).send('Invalid _id');
+      return;
+    }
+
+    const role = req.verified.role;
+    if (role !== 'admin') {
+      res.status(403).send('Forbidden, only for admin');
       return;
     }
 
